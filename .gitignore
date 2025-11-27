@@ -12,3 +12,5 @@ vocab/
 *.log
 
 uv.lock
+
+outputs/
