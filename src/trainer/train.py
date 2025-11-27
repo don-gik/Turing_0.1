@@ -50,7 +50,7 @@ class ModelTrainer:
         optimizer = optim.AdamW(self.model.parameters(), lr=1e-3)
         criterion = nn.CrossEntropyLoss()
 
-        for epoch in range(50):
+        for epoch in range(200):
             train_loss = .0
             self.model.train()
 

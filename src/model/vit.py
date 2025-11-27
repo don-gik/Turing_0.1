@@ -49,11 +49,14 @@ class PatchEmbedding(nn.Module):
             nn.Conv2d(in_channels, embed_dim, kernel_size=patch_size, stride=patch_size),
             Rearrange("b c (h) (w) -> b (h w) c"),
         )
-        self.position = nn.Parameter(torch.randn(img_H * img_W // (patch_size**2), embed_dim))
+        self.cls_token = nn.Parameter(torch.randn(1, 1, embed_dim))
+        self.position = nn.Parameter(torch.randn(img_H * img_W // (patch_size**2) + 1, embed_dim))
 
     def forward(self, x: Tensor) -> Tensor:
+        b, _, _, _ = x.shape
         x = self.projection(x)
-
+        cls_tokens = repeat(self.cls_token, '() n e -> b n e', b=b)
+        x = torch.cat([cls_tokens, x], dim=1)
         x += self.position
 
         return x
@@ -161,10 +164,8 @@ class Model(nn.Module):
         )
 
     def forward(self, x: Tensor):
-        residual = x
-
         x = self.patch_embed(x)
-
+        x = self.encoder(x)
         x = self.decoder(x)
         
         return x
