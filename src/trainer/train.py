@@ -30,7 +30,7 @@ class ModelTrainer:
             config.img_W,
             config.depth,
             config.n_classes
-        )
+        ).to(device)
 
         self.device = device
 
