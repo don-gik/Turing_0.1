@@ -19,7 +19,7 @@ class ResidualAdd(nn.Module):
 
 
 class FeedForward(nn.Sequential):
-    def __init__(self, embed_size: int, expansion: int = 4, dropout: float = 0.3) -> None:
+    def __init__(self, embed_size: int, expansion: int = 4, dropout: float = 0.1) -> None:
         super().__init__(
             nn.Linear(embed_size, expansion * embed_size),
             nn.GELU(),
@@ -108,7 +108,7 @@ class SelfAttention(nn.Module):
 
 class TransformerBlock(nn.Sequential):
     def __init__(
-        self, embed_size: int, dropout: float = 0.3, expansion: int = 4, forward_dropout: float = 0.3, **kwargs
+        self, embed_size: int, dropout: float = 0.1, expansion: int = 4, forward_dropout: float = 0.1, **kwargs
     ) -> None:
         super().__init__(
             ResidualAdd(
@@ -166,9 +166,8 @@ class Model(nn.Module):
         x = self.patch_embed(x)
 
         x = self.decoder(x)
-        out = residual + x
-
-        return out
+        
+        return x
 
 
 if __name__ == "__main__":

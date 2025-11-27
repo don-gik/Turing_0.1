@@ -3,5 +3,5 @@ train:
   patch_size: 4
   img_H: 32
   img_W: 32
-  depth: 6
+  depth: 8
   n_classes: 100

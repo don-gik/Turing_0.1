@@ -13,4 +13,5 @@ vocab/
 
 uv.lock
 
-outputs/
+outputs/**
+models/**
