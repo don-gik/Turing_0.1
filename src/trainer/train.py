@@ -29,7 +29,9 @@ class ModelTrainer:
             config.img_H,
             config.img_W,
             config.depth,
-            config.n_classes
+            config.n_classes,
+            dropout = config.dropout,
+            forward_dropout = config.forward_dropout,
         ).to(device)
 
         self.device = device

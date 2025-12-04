@@ -50,14 +50,14 @@ class PatchEmbedding(nn.Module):
             Rearrange("b c (h) (w) -> b (h w) c"),
         )
         self.cls_token = nn.Parameter(torch.randn(1, 1, embed_dim))
-        self.position = nn.Parameter(torch.randn(img_H * img_W // (patch_size**2) + 1, embed_dim))
+        self.position = nn.Parameter(torch.randn(1, img_H * img_W // (patch_size**2) + 1, embed_dim))
 
     def forward(self, x: Tensor) -> Tensor:
         b, _, _, _ = x.shape
         x = self.projection(x)
         cls_tokens = repeat(self.cls_token, '() n e -> b n e', b=b)
         x = torch.cat([cls_tokens, x], dim=1)
-        x += self.position
+        x += repeat(self.position, '() n e -> b n e', b=b)
 
         return x
 
@@ -70,13 +70,13 @@ class SelfAttention(nn.Module):
     def __init__(
         self,
         embed_dim: int,
-        heads: int = 8,
+        heads: int = 4,
         dropout: float = 0.0,
     ):
         super().__init__()
 
         self.heads = heads
-        self.inv_sqrt_dim: float = (embed_dim) ** (-0.5)
+        self.inv_sqrt_dim: float = (embed_dim // heads) ** (-0.5)
 
         self.weight_k = nn.Linear(embed_dim, embed_dim)
         self.weight_q = nn.Linear(embed_dim, embed_dim)
@@ -90,7 +90,7 @@ class SelfAttention(nn.Module):
 
     def forward(self, x: Tensor, mask: Tensor | None = None) -> Tensor:
         q: Tensor = rearrange(self.weight_q(x), "b n (h d) -> b h n d", h=self.heads)
-        k: Tensor = rearrange(self.weight_q(x), "b n (h d) -> b h n d", h=self.heads)
+        k: Tensor = rearrange(self.weight_k(x), "b n (h d) -> b h n d", h=self.heads)
         v: Tensor = rearrange(self.weight_v(x), "b n (h d) -> b h n d", h=self.heads)
 
         energy = einsum("bhqd, bhkd -> bhqk", q, k)
@@ -129,12 +129,16 @@ class Encoder(nn.Sequential):
     def __init__(self, depth: int = 12, **kwargs):
         super().__init__(*[TransformerBlock(**kwargs) for _ in range(depth)])
 
-class ClassificationHead(nn.Sequential):
+class ClassificationHead(nn.Module):
     def __init__(self, emb_size: int, n_classes: int):
-        super().__init__(
-            Reduce('b n e -> b e', reduction='mean'),
-            nn.LayerNorm(emb_size), 
-            nn.Linear(emb_size, n_classes))
+        super().__init__()
+        self.norm = nn.LayerNorm(emb_size)
+        self.fc = nn.Linear(emb_size, n_classes)
+
+    def forward(self, x):
+        cls = x[:, 0]
+        cls = self.norm(cls)
+        return self.fc(cls)
 
 class Model(nn.Module):
     """
@@ -169,9 +173,3 @@ class Model(nn.Module):
         x = self.decoder(x)
         
         return x
-
-
-if __name__ == "__main__":
-    model: nn.Module = Model(in_channels=9, patch_size=4, time=8, img_H=40, img_W=200, depth=6, n_classes=3)
-
-    summary(model, (9, 8, 40, 200), device="cpu")
