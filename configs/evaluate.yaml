@@ -1,0 +1,12 @@
+evaluate: true
+load: "models/model_199.pt"
+
+train:
+  in_channels: 3
+  patch_size: 2
+  img_H: 32
+  img_W: 32
+  depth: 12
+  n_classes: 100
+  dropout: 0.2
+  forward_dropout: 0.2
